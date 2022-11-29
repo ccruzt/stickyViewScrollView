@@ -1,23 +1,21 @@
 package com.ui.sticky.recycler.demo.sticky
 
-import android.R
+
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AlphaAnimation
-import android.widget.ScrollView
 import androidx.core.widget.NestedScrollView
+import com.ui.sticky.recycler.demo.R
 
 class StickyScrollView@JvmOverloads constructor(
     context: Context,
-    attributeSet: AttributeSet? = null,
-    defStyleAttr: Int = R.attr.scrollViewStyle
-) : NestedScrollView(context, attributeSet, defStyleAttr)  {
+    attrs: AttributeSet? = null,
+    defStyle: Int = android.R.attr.scrollViewStyle
+) : NestedScrollView(context, attrs, defStyle)  {
 
 
     /**
@@ -54,27 +52,18 @@ class StickyScrollView@JvmOverloads constructor(
 
     private val invalidateRunnable: Runnable = object : Runnable {
         override fun run() {
-            if (currentlyStickingView != null) {
-                val l = getLeftForViewRelativeOnlyChild(currentlyStickingView)
-                val t = getBottomForViewRelativeOnlyChild(currentlyStickingView!!)
-                val r = getRightForViewRelativeOnlyChild(currentlyStickingView)
-                val b = (scrollY + (currentlyStickingView!!.height + stickyViewTopOffset)).toInt()
+            currentlyStickingView?.let { currentStickyView ->
+                val l = getLeftForViewRelativeOnlyChild(currentStickyView)
+                val t = getBottomForViewRelativeOnlyChild(currentStickyView)
+                val r = getRightForViewRelativeOnlyChild(currentStickyView)
+                val b = (scrollY + (currentStickyView.height + stickyViewTopOffset)).toInt()
                 invalidate(l, t, r, b)
             }
             postDelayed(this, 16)
         }
     }
 
-//    fun StickyScrollView(context: Context?) {
-//        this(context, null)
-//    }
-
-//    fun StickyScrollView(context: Context?, attrs: AttributeSet?) {
-//        this(context, attrs, R.attr.scrollViewStyle)
-//    }
-
-    fun StickyScrollView(context: Context, attrs: AttributeSet?, defStyle: Int) {
-        super(context, attrs, defStyle)
+    init {
         setup()
         val a = context.obtainStyledAttributes(
             attrs,
@@ -86,13 +75,9 @@ class StickyScrollView@JvmOverloads constructor(
             R.styleable.StickyScrollView_stuckShadowHeight,
             defaultShadowHeightInPix
         )
-        val shadowDrawableRes = a.getResourceId(
-            R.styleable.StickyScrollView_stuckShadowDrawable, -1
-        )
+        val shadowDrawableRes = a.getResourceId(R.styleable.StickyScrollView_stuckShadowDrawable, -1)
         if (shadowDrawableRes != -1) {
-            mShadowDrawable = context.resources.getDrawable(
-                shadowDrawableRes
-            )
+            mShadowDrawable = context.resources.getDrawable(shadowDrawableRes)
         }
         a.recycle()
     }
@@ -111,42 +96,42 @@ class StickyScrollView@JvmOverloads constructor(
         stickyViews = ArrayList()
     }
 
-    private fun getLeftForViewRelativeOnlyChild(v: View?): Int {
-        var v = v
-        var left = v!!.left
-        while (v!!.parent !== getChildAt(0)) {
-            v = v!!.parent as View
-            left += v.left
+    private fun getLeftForViewRelativeOnlyChild(v: View): Int {
+        var view = v
+        var left = view.left
+        while (view.parent !== getChildAt(0)) {
+            view = view.parent as View
+            left += view.left
         }
         return left
     }
 
-    private fun getTopForViewRelativeOnlyChild(v: View?): Int {
-        var v = v
-        var top = v!!.top
-        while (v!!.parent !== getChildAt(0)) {
-            v = v!!.parent as View
-            top += v.top
+    private fun getTopForViewRelativeOnlyChild(v: View): Int {
+        var view = v
+        var top = view.top
+        while (view.parent !== getChildAt(0)) {
+            view = view.parent as View
+            top += view.top
         }
         return top
     }
 
-    private fun getRightForViewRelativeOnlyChild(v: View?): Int {
-        var v = v
-        var right = v!!.right
-        while (v!!.parent !== getChildAt(0)) {
-            v = v!!.parent as View
-            right += v.right
+    private fun getRightForViewRelativeOnlyChild(v: View): Int {
+        var view = v
+        var right = view.right
+        while (view.parent !== getChildAt(0)) {
+            view = view.parent as View
+            right += view.right
         }
         return right
     }
 
     private fun getBottomForViewRelativeOnlyChild(v: View): Int {
-        var v = v
-        var bottom = v.bottom
-        while (v.parent !== getChildAt(0)) {
-            v = v.parent as View
-            bottom += v.bottom
+        var view = v
+        var bottom = view.bottom
+        while (view.parent !== getChildAt(0)) {
+            view = view.parent as View
+            bottom += view.bottom
         }
         return bottom
     }
@@ -192,7 +177,7 @@ class StickyScrollView@JvmOverloads constructor(
 
     override fun dispatchDraw(canvas: Canvas) {
         super.dispatchDraw(canvas)
-        if (currentlyStickingView != null) {
+        currentlyStickingView?.let { currentlyStickingView ->
             canvas.save()
             canvas.translate(
                 (paddingLeft + stickyViewLeftOffset).toFloat(),
@@ -201,13 +186,13 @@ class StickyScrollView@JvmOverloads constructor(
             canvas.clipRect(
                 0f, if (clippingToPadding) -stickyViewTopOffset else 0f, (
                         width - stickyViewLeftOffset).toFloat(), (
-                        currentlyStickingView!!.height + mShadowHeight + 1).toFloat()
+                        currentlyStickingView.height + mShadowHeight + 1).toFloat()
             )
             if (mShadowDrawable != null) {
                 val left = 0
-                val right = currentlyStickingView!!.width
-                val top = currentlyStickingView!!.height
-                val bottom = currentlyStickingView!!.height + mShadowHeight
+                val right = currentlyStickingView.width
+                val top = currentlyStickingView.height
+                val bottom = currentlyStickingView.height + mShadowHeight
                 mShadowDrawable!!.setBounds(left, top, right, bottom)
                 mShadowDrawable!!.draw(canvas)
             }
@@ -215,14 +200,14 @@ class StickyScrollView@JvmOverloads constructor(
                 0f,
                 if (clippingToPadding) -stickyViewTopOffset else 0f,
                 width.toFloat(),
-                currentlyStickingView!!.height.toFloat()
+                currentlyStickingView.height.toFloat()
             )
             if (getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)) {
                 showView(currentlyStickingView)
-                currentlyStickingView!!.draw(canvas)
+                currentlyStickingView.draw(canvas)
                 hideView(currentlyStickingView)
             } else {
-                currentlyStickingView!!.draw(canvas)
+                currentlyStickingView.draw(canvas)
             }
             canvas.restore()
         }
@@ -235,10 +220,12 @@ class StickyScrollView@JvmOverloads constructor(
         if (redirectTouchesToStickyView) {
             redirectTouchesToStickyView = currentlyStickingView != null
             if (redirectTouchesToStickyView) {
-                redirectTouchesToStickyView =
-                    ev.y <= currentlyStickingView!!.height + stickyViewTopOffset && ev.x >= getLeftForViewRelativeOnlyChild(
-                        currentlyStickingView
-                    ) && ev.x <= getRightForViewRelativeOnlyChild(currentlyStickingView)
+                currentlyStickingView?.let {
+                    redirectTouchesToStickyView =
+                        ev.y <= currentlyStickingView!!.height + stickyViewTopOffset && ev.x >= getLeftForViewRelativeOnlyChild(
+                            it
+                        ) && ev.x <= getRightForViewRelativeOnlyChild(it)
+                }
             }
         } else if (currentlyStickingView == null) {
             redirectTouchesToStickyView = false
@@ -247,7 +234,7 @@ class StickyScrollView@JvmOverloads constructor(
             ev.offsetLocation(
                 0f,
                 -1 * (scrollY + stickyViewTopOffset - getTopForViewRelativeOnlyChild(
-                    currentlyStickingView
+                    currentlyStickingView!!
                 ))
             )
         }
@@ -260,7 +247,7 @@ class StickyScrollView@JvmOverloads constructor(
         if (redirectTouchesToStickyView) {
             ev.offsetLocation(
                 0f,
-                scrollY + stickyViewTopOffset - getTopForViewRelativeOnlyChild(currentlyStickingView)
+                scrollY + stickyViewTopOffset - getTopForViewRelativeOnlyChild(currentlyStickingView!!)
             )
         }
         if (ev.action == MotionEvent.ACTION_DOWN) {
@@ -325,18 +312,18 @@ class StickyScrollView@JvmOverloads constructor(
 
     private fun startStickingView(viewThatShouldStick: View) {
         currentlyStickingView = viewThatShouldStick
-        if (getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)) {
-            hideView(currentlyStickingView)
-        }
-        if ((currentlyStickingView!!.tag as String).contains(FLAG_NONCONSTANT)) {
-            post(invalidateRunnable)
-        }
+//        if (getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)) {
+//            hideView(currentlyStickingView!!)
+//        }
+//        if ((currentlyStickingView!!.tag as String).contains(FLAG_NONCONSTANT)) {
+//            post(invalidateRunnable)
+//        }
     }
 
     private fun stopStickingCurrentlyStickingView() {
-        if (getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)) {
-            showView(currentlyStickingView)
-        }
+//        if (getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)) {
+//            showView(currentlyStickingView!!)
+//        }
         currentlyStickingView = null
         removeCallbacks(invalidateRunnable)
     }
@@ -363,7 +350,7 @@ class StickyScrollView@JvmOverloads constructor(
             val vg = v
             for (i in 0 until vg.childCount) {
                 val tag = getStringTagForView(vg.getChildAt(i))
-                if (tag != null && tag.contains(STICKY_TAG)) {
+                if (tag.contains(STICKY_TAG)) {
                     stickyViews!!.add(vg.getChildAt(i))
                 } else if (vg.getChildAt(i) is ViewGroup) {
                     findStickyViews(vg.getChildAt(i))
@@ -371,43 +358,25 @@ class StickyScrollView@JvmOverloads constructor(
             }
         } else {
             val tag = v.tag as String
-            if (tag != null && tag.contains(STICKY_TAG)) {
+            if (tag.contains(STICKY_TAG)) {
                 stickyViews!!.add(v)
             }
         }
     }
 
-    private fun getStringTagForView(v: View?): String {
-        val tagObject = v!!.tag
-        return tagObject.toString()
+    private fun getStringTagForView(v: View): String {
+        v.tag?.let {
+            return it.toString()
+        }
+        return ""
     }
 
-    private fun hideView(v: View?) {
-        v?.let {
-            it.alpha = 0f
-        }
-//        if (Build.VERSION.SDK_INT >= 11) {
-//            v!!.alpha = 0f
-//        } else {
-//            val anim = AlphaAnimation(1f, 0f)
-//            anim.duration = 0
-//            anim.fillAfter = true
-//            v!!.startAnimation(anim)
-//        }
+    private fun hideView(v: View) {
+        v.alpha = 0f
     }
 
-    private fun showView(v: View?) {
-        v?.let {
-            it.alpha = 1f
-        }
-//        if (Build.VERSION.SDK_INT >= 11) {
-//            v!!.alpha = 1f
-//        } else {
-//            val anim = AlphaAnimation(0f, 1f)
-//            anim.duration = 0
-//            anim.fillAfter = true
-//            v!!.startAnimation(anim)
-//        }
+    private fun showView(v: View) {
+        v.alpha = 1f
     }
 
 }
