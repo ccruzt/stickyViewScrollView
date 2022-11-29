@@ -8,8 +8,8 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.forEach
 import androidx.core.widget.NestedScrollView
-import com.ui.sticky.recycler.demo.R
 
 class StickyScrollView@JvmOverloads constructor(
     context: Context,
@@ -17,29 +17,7 @@ class StickyScrollView@JvmOverloads constructor(
     defStyle: Int = android.R.attr.scrollViewStyle
 ) : NestedScrollView(context, attrs, defStyle)  {
 
-
-    /**
-     * Tag for views that should stick and have constant drawing. e.g. TextViews, ImageViews etc
-     */
-    val STICKY_TAG = "sticky"
-
-    /**
-     * Flag for views that should stick and have non-constant drawing. e.g. Buttons, ProgressBars etc
-     */
-    val FLAG_NONCONSTANT = "-nonconstant"
-
-    /**
-     * Flag for views that have aren't fully opaque
-     */
-    val FLAG_HASTRANSPARANCY = "-hastransparancy"
-
-    /**
-     * Default height of the shadow peeking out below the stuck view.
-     */
-    private val DEFAULT_SHADOW_HEIGHT = 10 // dp;
-
-
-    private var stickyViews: ArrayList<View>? = null
+    private var stickyViews = ArrayList<View>()
     private var currentlyStickingView: View? = null
     private var stickyViewTopOffset = 0f
     private var stickyViewLeftOffset = 0
@@ -63,37 +41,11 @@ class StickyScrollView@JvmOverloads constructor(
         }
     }
 
-    init {
-        setup()
-        val a = context.obtainStyledAttributes(
-            attrs,
-            R.styleable.StickyScrollView, defStyle, 0
-        )
-        val density = context.resources.displayMetrics.density
-        val defaultShadowHeightInPix = (DEFAULT_SHADOW_HEIGHT * density + 0.5f).toInt()
-        mShadowHeight = a.getDimensionPixelSize(
-            R.styleable.StickyScrollView_stuckShadowHeight,
-            defaultShadowHeightInPix
-        )
-        val shadowDrawableRes = a.getResourceId(R.styleable.StickyScrollView_stuckShadowDrawable, -1)
-        if (shadowDrawableRes != -1) {
-            mShadowDrawable = context.resources.getDrawable(shadowDrawableRes)
-        }
-        a.recycle()
-    }
-
-    /**
-     * Sets the height of the shadow drawable in pixels.
-     *
-     * @param height
-     */
-    fun setShadowHeight(height: Int) {
-        mShadowHeight = height
-    }
-
-
-    fun setup() {
-        stickyViews = ArrayList()
+    companion object {
+        /**
+         * Tag for views that should stick and have constant drawing. e.g. TextViews, ImageViews etc
+         */
+        const val STICKY_TAG = "sticky"
     }
 
     private fun getLeftForViewRelativeOnlyChild(v: View): Int {
@@ -202,13 +154,7 @@ class StickyScrollView@JvmOverloads constructor(
                 width.toFloat(),
                 currentlyStickingView.height.toFloat()
             )
-            if (getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)) {
-                showView(currentlyStickingView)
-                currentlyStickingView.draw(canvas)
-                hideView(currentlyStickingView)
-            } else {
-                currentlyStickingView.draw(canvas)
-            }
+            currentlyStickingView.draw(canvas)
             canvas.restore()
         }
     }
@@ -273,7 +219,7 @@ class StickyScrollView@JvmOverloads constructor(
     private fun doTheStickyThing() {
         var viewThatShouldStick: View? = null
         var approachingView: View? = null
-        for (v in stickyViews!!) {
+        for (v in stickyViews) {
             val viewTop =
                 getTopForViewRelativeOnlyChild(v) - scrollY + if (clippingToPadding) 0 else paddingTop
             if (viewTop <= 0) {
@@ -312,18 +258,9 @@ class StickyScrollView@JvmOverloads constructor(
 
     private fun startStickingView(viewThatShouldStick: View) {
         currentlyStickingView = viewThatShouldStick
-//        if (getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)) {
-//            hideView(currentlyStickingView!!)
-//        }
-//        if ((currentlyStickingView!!.tag as String).contains(FLAG_NONCONSTANT)) {
-//            post(invalidateRunnable)
-//        }
     }
 
     private fun stopStickingCurrentlyStickingView() {
-//        if (getStringTagForView(currentlyStickingView).contains(FLAG_HASTRANSPARANCY)) {
-//            showView(currentlyStickingView!!)
-//        }
         currentlyStickingView = null
         removeCallbacks(invalidateRunnable)
     }
@@ -339,7 +276,7 @@ class StickyScrollView@JvmOverloads constructor(
         if (currentlyStickingView != null) {
             stopStickingCurrentlyStickingView()
         }
-        stickyViews!!.clear()
+        stickyViews.clear()
         findStickyViews(getChildAt(0))
         doTheStickyThing()
         invalidate()
@@ -347,36 +284,24 @@ class StickyScrollView@JvmOverloads constructor(
 
     private fun findStickyViews(v: View) {
         if (v is ViewGroup) {
-            val vg = v
-            for (i in 0 until vg.childCount) {
-                val tag = getStringTagForView(vg.getChildAt(i))
+            v.forEach { childView ->
+                val tag = getStringTagForView(childView)
                 if (tag.contains(STICKY_TAG)) {
-                    stickyViews!!.add(vg.getChildAt(i))
-                } else if (vg.getChildAt(i) is ViewGroup) {
-                    findStickyViews(vg.getChildAt(i))
+                    stickyViews.add(childView)
+                } else if (childView is ViewGroup) {
+                    findStickyViews(childView)
                 }
             }
         } else {
-            val tag = v.tag as String
+            val tag = v.tag.toString()
             if (tag.contains(STICKY_TAG)) {
-                stickyViews!!.add(v)
+                stickyViews.add(v)
             }
         }
     }
 
     private fun getStringTagForView(v: View): String {
-        v.tag?.let {
-            return it.toString()
-        }
-        return ""
-    }
-
-    private fun hideView(v: View) {
-        v.alpha = 0f
-    }
-
-    private fun showView(v: View) {
-        v.alpha = 1f
+        return v.tag?.toString() ?: ""
     }
 
 }
