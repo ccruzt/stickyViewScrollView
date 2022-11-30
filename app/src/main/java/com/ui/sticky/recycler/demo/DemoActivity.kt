@@ -3,7 +3,6 @@ package com.ui.sticky.recycler.demo
 import android.os.Bundle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ui.sticky.recycler.demo.databinding.ActivityDemoBinding
-import com.ui.sticky.recycler.demo.sticky.HeaderItemDecoration
 import com.ui.sticky.recycler.demo.sticky.adapter.NonStickyItem
 import com.ui.sticky.recycler.demo.sticky.adapter.StickyItem
 import com.ui.sticky.recycler.demo.sticky.adapter.StickyRecyclerViewAdapter
@@ -34,24 +33,6 @@ class DemoActivity : BaseActivity<ActivityDemoBinding>() {
             NonStickyItem(text = "Item"),
             NonStickyItem(text = "Item"),
             NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Header 3"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-            NonStickyItem(text = "Item"),
-//            StickyItem(text = "Header 4"),
-//            NonStickyItem(text = "Item"),
-//            NonStickyItem(text = "Item"),
-//            NonStickyItem(text = "Item"),
-//            NonStickyItem(text = "Item"),
-//            NonStickyItem(text = "Item")
         )
 
         stickyAdapter = StickyRecyclerViewAdapter(stickyList)

@@ -3,7 +3,6 @@ package com.ui.sticky.recycler.demo.sticky
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -25,9 +24,6 @@ class StickyScrollView@JvmOverloads constructor(
     private var redirectTouchesToStickyView = false
     private var clippingToPadding = false
     private var clipToPaddingHasBeenSet = false
-
-    private var mShadowHeight = 0
-    private var mShadowDrawable: Drawable? = null
 
     private val invalidateRunnable: Runnable = object : Runnable {
         override fun run() {
@@ -140,16 +136,8 @@ class StickyScrollView@JvmOverloads constructor(
                 0f,
                 getClipRectTop(),
                 (width - stickyViewLeftOffset).toFloat(),
-                (currentlyStickingView.height + mShadowHeight + 1).toFloat()
+                (currentlyStickingView.height + 1).toFloat()
             )
-            mShadowDrawable?.let {
-                val left = 0
-                val right = currentlyStickingView.width
-                val top = currentlyStickingView.height
-                val bottom = currentlyStickingView.height + mShadowHeight
-                it.setBounds(left, top, right, bottom)
-                it.draw(canvas)
-            }
 
             canvas.clipRect(
                 0f,

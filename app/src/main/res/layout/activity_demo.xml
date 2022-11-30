@@ -61,6 +61,22 @@
                 android:padding="32dp"
                 android:tag="sticky"
                 android:text="Title 4" />
+
+            <TextView
+                style="@style/TextAppearance.AppCompat.Large"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="32dp"
+                android:tag="sticky"
+                android:text="Title 5" />
+
+            <TextView
+                style="@style/TextAppearance.AppCompat.Large"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="32dp"
+                android:tag="sticky"
+                android:text="Title 6" />
         </LinearLayout>
 
     </com.ui.sticky.recycler.demo.sticky.StickyScrollView>
