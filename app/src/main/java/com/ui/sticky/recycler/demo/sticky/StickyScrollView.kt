@@ -1,13 +1,16 @@
 package com.ui.sticky.recycler.demo.sticky
 
-
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.VisibleForTesting
 import androidx.core.view.forEach
+import androidx.core.view.marginLeft
+import androidx.core.view.marginTop
 import androidx.core.widget.NestedScrollView
 import kotlin.math.min
 
@@ -15,15 +18,18 @@ class StickyScrollView@JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyle: Int = android.R.attr.scrollViewStyle
-) : NestedScrollView(context, attrs, defStyle)  {
+) : NestedScrollView(context, attrs, defStyle) {
 
     private var stickyViews = ArrayList<View>()
     private var currentlyStickingView: View? = null
-    private var stickyViewTopOffset = 0f
+    @VisibleForTesting
+    internal var stickyViewTopOffset = 0f
     private var stickyViewLeftOffset = 0
     private var redirectTouchesToStickyView = false
-    private var clippingToPadding = false
+    @VisibleForTesting
+    internal var clippingToPadding = false
     private var clipToPaddingHasBeenSet = false
+    private var hasNotDoneActionDown = true
 
     private val invalidateRunnable: Runnable = object : Runnable {
         override fun run() {
@@ -39,10 +45,7 @@ class StickyScrollView@JvmOverloads constructor(
     }
 
     companion object {
-        /**
-         * Tag for views that should stick and have constant drawing. e.g. TextViews, ImageViews etc
-         */
-        const val STICKY_TAG = "sticky"
+        const val STICKY_VIEW_TAG = "sticky"
     }
 
     private fun getLeftForViewRelativeOnlyChild(v: View): Int {
@@ -52,7 +55,7 @@ class StickyScrollView@JvmOverloads constructor(
             view = view.parent as View
             left += view.left
         }
-        return left
+        return left + (view.parent as View).marginLeft
     }
 
     private fun getTopForViewRelativeOnlyChild(v: View): Int {
@@ -62,7 +65,7 @@ class StickyScrollView@JvmOverloads constructor(
             view = view.parent as View
             top += view.top
         }
-        return top
+        return top + (view.parent as View).marginTop
     }
 
     private fun getRightForViewRelativeOnlyChild(v: View): Int {
@@ -128,10 +131,7 @@ class StickyScrollView@JvmOverloads constructor(
         super.dispatchDraw(canvas)
         currentlyStickingView?.let { currentlyStickingView ->
             canvas.save()
-            canvas.translate(
-                (paddingLeft + stickyViewLeftOffset).toFloat(),
-                scrollY + stickyViewTopOffset + if (clippingToPadding) paddingTop else 0
-            )
+            canvas.translate((paddingLeft + stickyViewLeftOffset).toFloat(), canvasTranslateYPosition())
             canvas.clipRect(
                 0f,
                 getClipRectTop(),
@@ -151,8 +151,6 @@ class StickyScrollView@JvmOverloads constructor(
         }
     }
 
-    private fun getClipRectTop() = if (clippingToPadding) - stickyViewTopOffset else 0f
-
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (ev.action == MotionEvent.ACTION_DOWN) {
             redirectTouchesToStickyView = true
@@ -160,36 +158,26 @@ class StickyScrollView@JvmOverloads constructor(
         if (redirectTouchesToStickyView) {
             redirectTouchesToStickyView = currentlyStickingView != null
             if (redirectTouchesToStickyView) {
-                redirectTouchesToStickyView = shouldRedirectTouchesToStickyView(ev, currentlyStickingView!!)
+                redirectTouchesToStickyView = shouldRedirectTouchesToStickyView(ev, currentlyStickingView)
             }
         } else if (currentlyStickingView == null) {
             redirectTouchesToStickyView = false
         }
 
         if (redirectTouchesToStickyView) {
-            ev.offsetLocation(
-                0f,
-                -1 * (scrollY + stickyViewTopOffset - getTopForViewRelativeOnlyChild(
-                    currentlyStickingView!!
-                ))
-            )
+            currentlyStickingView?.let {
+                ev.offsetLocation(0f, -1 * (scrollY + stickyViewTopOffset - getTopForViewRelativeOnlyChild(it)))
+            }
         }
         return super.dispatchTouchEvent(ev)
     }
 
-    private fun shouldRedirectTouchesToStickyView(ev: MotionEvent, currentStickyView: View) =
-        ev.y <= currentStickyView.height + stickyViewTopOffset
-                && ev.x >= getLeftForViewRelativeOnlyChild(currentStickyView)
-                && ev.x <= getRightForViewRelativeOnlyChild(currentStickyView)
-
-    private var hasNotDoneActionDown = true
-
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(ev: MotionEvent): Boolean {
         if (redirectTouchesToStickyView) {
-            ev.offsetLocation(
-                0f,
-                scrollY + stickyViewTopOffset - getTopForViewRelativeOnlyChild(currentlyStickingView!!)
-            )
+            currentlyStickingView?.let {
+                ev.offsetLocation(0f, scrollY + stickyViewTopOffset - getTopForViewRelativeOnlyChild(it))
+            }
         }
         if (ev.action == MotionEvent.ACTION_DOWN) {
             hasNotDoneActionDown = false
@@ -208,7 +196,21 @@ class StickyScrollView@JvmOverloads constructor(
 
     override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
         super.onScrollChanged(l, t, oldl, oldt)
-        doTheStickyThing()
+        handleStickyViews()
+    }
+
+    @VisibleForTesting
+    internal fun canvasTranslateYPosition() = scrollY + stickyViewTopOffset + if (clippingToPadding) paddingTop else 0
+
+    private fun getClipRectTop() = if (clippingToPadding) - stickyViewTopOffset else 0f
+
+    private fun shouldRedirectTouchesToStickyView(ev: MotionEvent, currentStickyView: View?): Boolean {
+        currentStickyView?.let {
+            return ev.y <= it.height + stickyViewTopOffset &&
+                    ev.x >= getLeftForViewRelativeOnlyChild(it) &&
+                    ev.x <= getRightForViewRelativeOnlyChild(it)
+        }
+        return false
     }
 
     private fun scrollYPlusPaddingTop(): Int {
@@ -216,9 +218,11 @@ class StickyScrollView@JvmOverloads constructor(
         return scrollY + padding
     }
 
-    private fun doTheStickyThing() {
+    private fun handleStickyViews() {
         var viewThatShouldStick: View? = null
         var approachingView: View? = null
+
+        // Assign viewThatShouldStick
         for (stickyView in stickyViews) {
             val viewTop = getTopForViewRelativeOnlyChild(stickyView) - scrollYPlusPaddingTop()
             if (viewTop <= 0 && assignViewThatShouldSticky(viewThatShouldStick, viewTop)) {
@@ -236,9 +240,8 @@ class StickyScrollView@JvmOverloads constructor(
                 if (currentlyStickingView != null) {
                     stopStickingCurrentlyStickingView()
                 }
-                // only compute the left offset when we start sticking.
                 stickyViewLeftOffset = getLeftForViewRelativeOnlyChild(viewThatShouldStick)
-                startStickingView(viewThatShouldStick)
+                currentlyStickingView = viewThatShouldStick
             }
         } else if (currentlyStickingView != null) {
             stopStickingCurrentlyStickingView()
@@ -252,15 +255,8 @@ class StickyScrollView@JvmOverloads constructor(
         viewThatShouldStick == null || viewTop > getTopForViewRelativeOnlyChild(viewThatShouldStick) - scrollYPlusPaddingTop()
 
     private fun getStickyViewTopOffsetStickyLogic(approachingView: View?, viewThatShouldStick: View): Float {
-        return if (approachingView == null) {
-            0f
-        } else {
-            min(0, getTopForViewRelativeOnlyChild(approachingView) - scrollYPlusPaddingTop() - viewThatShouldStick.height).toFloat()
-        }
-    }
-
-    private fun startStickingView(viewThatShouldStick: View) {
-        currentlyStickingView = viewThatShouldStick
+        return if (approachingView == null) 0f
+        else min(0, getTopForViewRelativeOnlyChild(approachingView) - scrollYPlusPaddingTop() - viewThatShouldStick.height).toFloat()
     }
 
     private fun stopStickingCurrentlyStickingView() {
@@ -274,30 +270,29 @@ class StickyScrollView@JvmOverloads constructor(
         }
         stickyViews.clear()
         findStickyViews(getChildAt(0))
-        doTheStickyThing()
+        handleStickyViews()
         invalidate()
     }
 
-    private fun findStickyViews(v: View) {
-        if (v is ViewGroup) {
-            v.forEach { childView ->
-                val tag = getStringTagForView(childView)
-                if (tag.contains(STICKY_TAG)) {
-                    stickyViews.add(childView)
-                } else if (childView is ViewGroup) {
-                    findStickyViews(childView)
-                }
-            }
+    private fun findStickyViews(view: View) {
+        if (view is ViewGroup) {
+            findStickyViewsInsideViewGroup(view)
         } else {
-            val tag = v.tag.toString()
-            if (tag.contains(STICKY_TAG)) {
-                stickyViews.add(v)
+            val tag = view.tag.toString()
+            if (tag.contains(STICKY_VIEW_TAG)) {
+                stickyViews.add(view)
             }
         }
     }
 
-    private fun getStringTagForView(v: View): String {
-        return v.tag?.toString() ?: ""
+    private fun findStickyViewsInsideViewGroup(viewGroup: ViewGroup) {
+        viewGroup.forEach { view ->
+            val tag = view.tag?.toString() ?: ""
+            if (tag.contains(STICKY_VIEW_TAG)) {
+                stickyViews.add(view)
+            } else if (view is ViewGroup) {
+                findStickyViews(view)
+            }
+        }
     }
-
 }

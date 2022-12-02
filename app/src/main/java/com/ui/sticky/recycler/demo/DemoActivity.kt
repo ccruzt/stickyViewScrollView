@@ -1,19 +1,18 @@
 package com.ui.sticky.recycler.demo
 
 import android.os.Bundle
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.ui.sticky.recycler.demo.databinding.ActivityDemoBinding
+import com.ui.sticky.recycler.demo.databinding.BottomScrollingBinding
 import com.ui.sticky.recycler.demo.sticky.adapter.NonStickyItem
 import com.ui.sticky.recycler.demo.sticky.adapter.StickyItem
 import com.ui.sticky.recycler.demo.sticky.adapter.StickyRecyclerViewAdapter
 
-class DemoActivity : BaseActivity<ActivityDemoBinding>() {
+class DemoActivity : BaseActivity<BottomScrollingBinding>() {
 
     private lateinit var stickyAdapter: StickyRecyclerViewAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        initRecyclerView()
+//        initRecyclerView()
     }
 
     private fun initRecyclerView() {
@@ -35,21 +34,21 @@ class DemoActivity : BaseActivity<ActivityDemoBinding>() {
             NonStickyItem(text = "Item"),
         )
 
-        stickyAdapter = StickyRecyclerViewAdapter(stickyList)
+        /*stickyAdapter = StickyRecyclerViewAdapter(stickyList)
         binding.rvSticky.apply {
             layoutManager = LinearLayoutManager(context)
             binding.rvSticky.isNestedScrollingEnabled = false
             adapter = stickyAdapter
-//            addItemDecoration(
-//                HeaderItemDecoration(this, false) {
-//                    this.adapter?.getItemViewType(it) == R.layout.item_sticky
-//                }
-//            )
-        }
+            addItemDecoration(
+                HeaderItemDecoration(this, false) {
+                    this.adapter?.getItemViewType(it) == R.layout.item_sticky
+                }
+            )
+        }*/
     }
 
-    override fun getBindingClass(): ActivityDemoBinding {
-        return ActivityDemoBinding.inflate(layoutInflater)
+    override fun getBindingClass(): BottomScrollingBinding {
+        return BottomScrollingBinding.inflate(layoutInflater)
     }
 
 }
